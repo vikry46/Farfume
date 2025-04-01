@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\KariawanController;
 use App\Http\Controllers\MarketController;
+use App\Http\Controllers\PengirimanController;
+use App\Http\Controllers\PenjualanController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\RelationController;
 use App\Http\Controllers\SupllyController;
@@ -56,6 +58,17 @@ Route::put('kariawan/edit/{id}',[KariawanController::class,'edit'])->name('karia
 Route::patch('kariawan/update/{id}',[KariawanController::class,'update'])->name('kariawan.update');
 Route::delete('kariawan/delete/{id}',[KariawanController::class,'delete'])->name('kariawan.delete');
 
+Route::get('pengiriman',[PengirimanController::class,'index']);
+Route::post('pengiriman/store', [PengirimanController::class, 'store']);
+Route::get('pengiriman/show/{id}', [PengirimanController::class, 'show']); 
+Route::patch('pengiriman/update/{id}', [PengirimanController::class, 'update']); 
+Route::delete('pengiriman/delete/{id}', [PengirimanController::class, 'destroy']);
+
+Route::get('penjualan',[PenjualanController::class,'index']);
+Route::post('penjualan/store',[PenjualanController::class,'store']);
+Route::get('penjualan/show/{id}',[PenjualanController::class,'show']);
+Route::patch('penjualan/update/{id}',[PenjualanController::class,'update']);
+Route::delete('penjualan/delete/{id}',[PenjualanController::class,'destroy']);
 
 Route::get('market-produk',[RelationController::class,'index']);
 Route::post('market-produk/store',[RelationController::class,'store'])->name('markerProduk.store');

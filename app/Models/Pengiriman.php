@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-
-class Produk extends Model
+class Pengiriman extends Model
 {
     use HasFactory;
-        /**
+    protected $table = 'pengiriman';
+    /**
      * The primary key associated with the table.
      *
      * @var string
@@ -38,9 +38,11 @@ class Produk extends Model
      */
     protected $fillable = [
         'uuid',
-        'id_supply',
         'id_market',
-        'delete'
+        'id_supplie',
+        'jumlah_kirim',
+        'tanggal',
+        'delete' 
     ];
 
     protected static function boot()
@@ -49,16 +51,15 @@ class Produk extends Model
 
         static::creating(function ($product) {
             $product->id = (string) Str::uuid();
+
         });
     }
-
-    public function supply()
+    public function Market()
     {
-        return $this->belongsTo(Suplly::class,'id_supply');
+        return $this->belongsTo(Market::class,'id_market');
     }
-
-    public function produkMarket()
+    public function Supplie()
     {
-        return $this->hasMany(MarketProdukRelation::class);
+        return $this->belongsTo(Suplly::class,'id_supplie');
     }
 }

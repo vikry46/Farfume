@@ -54,5 +54,13 @@ class Market extends Model
     {
         return $this->hasMany(MarketProdukRelation::class); 
     }
+    public function marketPengiriman()
+    {
+        return $this->hasMany(Pengiriman::class);
+    }
+    public function marketPenjualan()
+    {
+        return $this->hasMany(Penjualan::class);
+    }
 
 }

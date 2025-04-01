@@ -9,7 +9,9 @@ use Illuminate\Support\Str;
 class Suplly extends Model
 {
     use HasFactory;
+    protected $table = 'supplies';
         /**
+         * 
      * The primary key associated with the table.
      *
      * @var string
@@ -39,7 +41,8 @@ class Suplly extends Model
         'uuid',
         'nama',
         'kode_barang',
-        'total_all',
+        'total_masuk',
+        'tanggal',
         'delete'
     ];
     protected static function boot()
@@ -54,6 +57,13 @@ class Suplly extends Model
     public function produk()
     {
         return $this->hasMany(Produk::class); 
+    }
+    public function pengiriman(){
+        return $this->hasMany(Pengiriman::class);
+    }
+    public function penjualan()
+    {
+        return $this->hasMany(Penjualan::class);
     }
 
 }

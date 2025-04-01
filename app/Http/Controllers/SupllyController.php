@@ -8,78 +8,96 @@ use Illuminate\Support\Facades\Validator;
 
 class SupllyController extends Controller
 {
-    // pemanggilan data berdasarkan tanggal
-    
-    // public function index(Request $request){
-    //     $dateNow=Suplly::whereDate('created_at',$request->created_at)->get();
-    //     return response()->json($dateNow);
-    // }
-
+    // Menampilkan semua data suplly
     public function index()
     {
-        $supply=Suplly::all();
+        $supply = Suplly::all();
         return response()->json([
-            'data'=>$supply
-        ],201);
+            'data' => $supply
+        ], 200);
     }
 
-
+    // Menyimpan data suplly baru
     public function store(Request $request) {
         $validator = Validator::make($request->all(), [
-            'nama'          => 'required|string|max:255',
-            'kode_barang' => 'required|string|max:255',
-            'total_all' => 'required|integer|max:255',
+            'nama'         => 'required|string|max:255',
+            'kode_barang'  => 'required|string|max:255',
+            'total_masuk'  => 'required|integer',
+            'tanggal'      => 'required|date',
         ],[
-            'nama.required'=>'Nama wajib di isi',
-            'nama.string'=>'Nama berupa huruf bukan angka',
-            'kode_barang.required'=>'Kode barang wajib di isi',
-            'total_all.required'=>'Jumlah keseluruhan wajib di isi',
-            'total_all.integer'=>'Jumlah keseluruhan menggunakan angka'
+            'nama.required'         => 'Nama wajib diisi',
+            'nama.string'           => 'Nama harus berupa huruf',
+            'kode_barang.required'  => 'Kode barang wajib diisi',
+            'total_masuk.required'  => 'Jumlah keseluruhan wajib diisi',
+            'total_masuk.integer'   => 'Jumlah keseluruhan harus angka',
+            'tanggal.required'      => 'Tanggal wajib diisi'
         ]);
-        
+
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
 
         $suplly = Suplly::create([
-            'nama' => $request->nama,
+            'nama'        => $request->nama,
             'kode_barang' => $request->kode_barang,
-            'total_all' => $request->total_all
+            'total_masuk' => $request->total_masuk,
+            'tanggal'     => $request->tanggal
         ]);
 
         return response()->json([
-            'data'=>$suplly,
-            'message'=>'Suplly berhasil di simpan'
-        ],201);
+            'data'    => $suplly,
+            'message' => 'Suplly berhasil disimpan'
+        ], 201);
     }
-    public function show($id){
-        $data = Suplly::where('id',$id)->first();
+
+    // Menampilkan suplly berdasarkan ID
+    public function show($id) {
+        $data = Suplly::find($id);
+
+        if (!$data) {
+            return response()->json(['message' => 'Suplly tidak ditemukan'], 404);
+        }
+
         return response()->json([
-            'data'=>$data,
-            'message'=>'Suplly sudah ditemukan',
-        ],201);
+            'data'    => $data,
+            'message' => 'Suplly ditemukan',
+        ], 200);
     }
-    public function update(Request $request,Suplly $id)
-    {
+
+    // Mengupdate data suplly
+    public function update(Request $request, $id) {
+        $suplly = Suplly::findOrFail($id);
+
         $validator = Validator::make($request->all(), [
-            'nama' => 'required|string|max:255',
+            'nama'        => 'required|string|max:255',
             'kode_barang' => 'required|string|max:255',
-            'total_all' => 'required|string|max:255',
+            'total_masuk' => 'required|integer',
+            'tanggal'     => 'required|date',
         ],[
-            'total_all.integer'=>'Jumlah keseluruhan menggunakan angka'
+            'total_masuk.integer' => 'Jumlah keseluruhan harus angka'
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
 
-        $id->update($request->all());
+        $suplly->update($request->all());
 
-        return response()->json($id);
+        return response()->json([
+            'data'    => $suplly,
+            'message' => 'Suplly berhasil diperbarui'
+        ], 200);
     }
-    public function delete(Suplly $id)
-    {
-        $id->delete();
-        return response()->json(['message' => 'Data Berhasil di hapus']);
+
+    // Menghapus data suplly
+    public function delete($id) {
+        $suplly = Suplly::find($id);
+
+        if (!$suplly) {
+            return response()->json(['message' => 'Suplly tidak ditemukan'], 404);
+        }
+
+        $suplly->delete();
+        return response()->json(null, 204);
     }
 }
