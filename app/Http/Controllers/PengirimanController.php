@@ -26,15 +26,31 @@ class PengirimanController extends Controller
         if (!$pengiriman) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data tidak ditemukan'
+                'message' => 'Pengiriman tidak ditemukan'
             ], Response::HTTP_NOT_FOUND);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Detail pengiriman',
-            'data'    => $pengiriman
-        ], Response::HTTP_OK);
+    return response()->json([
+        'success' => true,
+        'message' => 'List semua pengiriman',
+        'data'    => $pengiriman->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'id_market' => $item->id_market,
+                'id_supplie' => $item->id_supplie,
+                'jumlah_kirim' => $item->jumlah_kirim,
+                'tanggal' => $item->tanggal,
+                'market' => $item->market ? [
+                    'id' => $item->market->id,
+                    'nama' => $item->market->nama
+                ] : null,
+                'supplie' => $item->supplie ? [
+                    'id' => $item->supplie->id,
+                    'nama' => $item->supplie->nama
+                ] : null
+            ];
+        })
+    ], Response::HTTP_OK);
     }
 
     public function store(Request $request)

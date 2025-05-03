@@ -41,6 +41,9 @@ protected $fillable = [
     'id_supplie',
     'id_market',
     'terjual',
+    'estimasi_botol',
+    'ukuran_botol',
+    'harga',
     'tanggal',
     'delete'
 ];

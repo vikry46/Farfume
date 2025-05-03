@@ -54,12 +54,13 @@ class Pengiriman extends Model
 
         });
     }
-    public function Market()
+    public function market()
     {
-        return $this->belongsTo(Market::class,'id_market');
+        return $this->belongsTo(Market::class, 'id_market', 'id');
     }
-    public function Supplie()
+    
+    public function supplie()
     {
-        return $this->belongsTo(Suplly::class,'id_supplie');
+        return $this->belongsTo(Suplly::class, 'id_supplie', 'id');
     }
 }

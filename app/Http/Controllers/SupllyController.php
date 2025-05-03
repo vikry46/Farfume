@@ -3,15 +3,54 @@
 namespace App\Http\Controllers;
 
 use App\Models\Suplly;
+use App\Models\Pengiriman;
+use App\Models\Penjualan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class SupllyController extends Controller
 {
+    private function hitungJumlahAll($id_supplie)
+{
+    // Ambil semua market terkait supplie
+    $markets = Pengiriman::where('id_supplie', $id_supplie)
+                ->pluck('id_market')
+                ->unique();
+
+    $totalStockMarket = 0;
+    $totalKirimKeseluruhan = 0;
+
+    foreach ($markets as $market) {
+        $jumlahKirim = Pengiriman::where('id_supplie', $id_supplie)
+                            ->where('id_market', $market)
+                            ->sum('jumlah_kirim');
+
+        $jumlahTerjual = Penjualan::where('id_supplie', $id_supplie)
+                            ->where('id_market', $market)
+                            ->sum('terjual');
+
+        $stokToko = $jumlahKirim - $jumlahTerjual;
+
+        // Akumulasi
+        $totalStockMarket += $stokToko;
+        $totalKirimKeseluruhan += $jumlahKirim;
+    }
+
+    // Total barang masuk
+    $totalBarangMasuk = \App\Models\BarangMasuk::where('id_supplie', $id_supplie)->sum('juml_masuk');
+
+    // Rumus baru: total stock = stok toko + barang masuk - total kirim
+    return $totalStockMarket + $totalBarangMasuk - $totalKirimKeseluruhan;
+}
+
     // Menampilkan semua data suplly
     public function index()
     {
-        $supply = Suplly::all();
+        $supply = Suplly::all()->map(function ($item) {
+            $item->jumlah_all = $this->hitungJumlahAll($item->id);
+            return $item;
+        });
+
         return response()->json([
             'data' => $supply
         ], 200);
@@ -22,15 +61,10 @@ class SupllyController extends Controller
         $validator = Validator::make($request->all(), [
             'nama'         => 'required|string|max:255',
             'kode_barang'  => 'required|string|max:255',
-            'total_masuk'  => 'required|integer',
-            'tanggal'      => 'required|date',
         ],[
             'nama.required'         => 'Nama wajib diisi',
             'nama.string'           => 'Nama harus berupa huruf',
             'kode_barang.required'  => 'Kode barang wajib diisi',
-            'total_masuk.required'  => 'Jumlah keseluruhan wajib diisi',
-            'total_masuk.integer'   => 'Jumlah keseluruhan harus angka',
-            'tanggal.required'      => 'Tanggal wajib diisi'
         ]);
 
         if ($validator->fails()) {
@@ -40,9 +74,10 @@ class SupllyController extends Controller
         $suplly = Suplly::create([
             'nama'        => $request->nama,
             'kode_barang' => $request->kode_barang,
-            'total_masuk' => $request->total_masuk,
-            'tanggal'     => $request->tanggal
         ]);
+
+        // Hitung jumlah_all setelah menyimpan
+        $suplly->jumlah_all = $this->hitungJumlahAll($suplly->id);
 
         return response()->json([
             'data'    => $suplly,
@@ -58,6 +93,9 @@ class SupllyController extends Controller
             return response()->json(['message' => 'Suplly tidak ditemukan'], 404);
         }
 
+        $data->jumlah_all = $this->hitungJumlahAll($id);
+        $data->totalstock = $data->jumlah_all;
+
         return response()->json([
             'data'    => $data,
             'message' => 'Suplly ditemukan',
@@ -71,17 +109,18 @@ class SupllyController extends Controller
         $validator = Validator::make($request->all(), [
             'nama'        => 'required|string|max:255',
             'kode_barang' => 'required|string|max:255',
-            'total_masuk' => 'required|integer',
-            'tanggal'     => 'required|date',
-        ],[
-            'total_masuk.integer' => 'Jumlah keseluruhan harus angka'
-        ]);
+
+        ],);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
 
         $suplly->update($request->all());
+
+        // Hitung jumlah_all setelah update
+        $suplly->jumlah_all = $this->hitungJumlahAll($suplly->id);
+        $suplly->totalstock = $suplly->jumlah_all;
 
         return response()->json([
             'data'    => $suplly,
