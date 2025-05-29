@@ -22,3 +22,9 @@ Route::get('/test-token', function () {
     $user = User::first(); 
     return $user->createToken('test')->plainTextToken;
 });
+
+Route::middleware(['web'])->group(function () {
+    Route::get('/csrf', function () {
+        return response()->json(['token' => csrf_token()]);
+    });
+});
