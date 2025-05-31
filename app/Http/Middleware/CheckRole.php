@@ -24,7 +24,7 @@ class CheckRole
         }
 
         $allowedRoles = explode('|', $roles);
-        
+
         // Periksa role user
         if (!in_array($request->user()->role, $allowedRoles)) {
             return response()->json([

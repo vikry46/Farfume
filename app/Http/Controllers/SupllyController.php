@@ -11,37 +11,37 @@ use Illuminate\Support\Facades\Validator;
 class SupllyController extends Controller
 {
     private function hitungJumlahAll($id_supplie)
-{
-    // Ambil semua market terkait supplie
-    $markets = Pengiriman::where('id_supplie', $id_supplie)
-                ->pluck('id_market')
-                ->unique();
+    {
+        // Ambil semua market terkait supplie
+        $markets = Pengiriman::where('id_supplie', $id_supplie)
+            ->pluck('id_market')
+            ->unique();
 
-    $totalStockMarket = 0;
-    $totalKirimKeseluruhan = 0;
+        $totalStockMarket = 0;
+        $totalKirimKeseluruhan = 0;
 
-    foreach ($markets as $market) {
-        $jumlahKirim = Pengiriman::where('id_supplie', $id_supplie)
-                            ->where('id_market', $market)
-                            ->sum('jumlah_kirim');
+        foreach ($markets as $market) {
+            $jumlahKirim = Pengiriman::where('id_supplie', $id_supplie)
+                ->where('id_market', $market)
+                ->sum('jumlah_kirim');
 
-        $jumlahTerjual = Penjualan::where('id_supplie', $id_supplie)
-                            ->where('id_market', $market)
-                            ->sum('terjual');
+            $jumlahTerjual = Penjualan::where('id_supplie', $id_supplie)
+                ->where('id_market', $market)
+                ->sum('terjual');
 
-        $stokToko = $jumlahKirim - $jumlahTerjual;
+            $stokToko = $jumlahKirim - $jumlahTerjual;
 
-        // Akumulasi
-        $totalStockMarket += $stokToko;
-        $totalKirimKeseluruhan += $jumlahKirim;
+            // Akumulasi
+            $totalStockMarket += $stokToko;
+            $totalKirimKeseluruhan += $jumlahKirim;
+        }
+
+        // Total barang masuk
+        $totalBarangMasuk = \App\Models\BarangMasuk::where('id_supplie', $id_supplie)->sum('juml_masuk');
+
+        // Rumus baru: total stock = stok toko + barang masuk - total kirim
+        return $totalStockMarket + $totalBarangMasuk - $totalKirimKeseluruhan;
     }
-
-    // Total barang masuk
-    $totalBarangMasuk = \App\Models\BarangMasuk::where('id_supplie', $id_supplie)->sum('juml_masuk');
-
-    // Rumus baru: total stock = stok toko + barang masuk - total kirim
-    return $totalStockMarket + $totalBarangMasuk - $totalKirimKeseluruhan;
-}
 
     // Menampilkan semua data suplly
     public function index()
@@ -57,11 +57,12 @@ class SupllyController extends Controller
     }
 
     // Menyimpan data suplly baru
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
         $validator = Validator::make($request->all(), [
             'nama'         => 'required|string|max:255',
             'kode_barang'  => 'required|string|max:255',
-        ],[
+        ], [
             'nama.required'         => 'Nama wajib diisi',
             'nama.string'           => 'Nama harus berupa huruf',
             'kode_barang.required'  => 'Kode barang wajib diisi',
@@ -86,7 +87,8 @@ class SupllyController extends Controller
     }
 
     // Menampilkan suplly berdasarkan ID
-    public function show($id) {
+    public function show($id)
+    {
         $data = Suplly::find($id);
 
         if (!$data) {
@@ -103,7 +105,8 @@ class SupllyController extends Controller
     }
 
     // Mengupdate data suplly
-    public function update(Request $request, $id) {
+    public function update(Request $request, $id)
+    {
         $suplly = Suplly::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
@@ -129,7 +132,8 @@ class SupllyController extends Controller
     }
 
     // Menghapus data suplly
-    public function delete($id) {
+    public function delete($id)
+    {
         $suplly = Suplly::find($id);
 
         if (!$suplly) {

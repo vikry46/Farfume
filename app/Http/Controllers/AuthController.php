@@ -43,21 +43,21 @@ class AuthController extends Controller
                     'email' => 'required|string|email|max:255|unique:users',
                     'password' => 'required|string|min:8|confirmed',
                 ]);
-        
+
                 if ($validator->fails()) {
                     return response()->json(['errors' => $validator->errors()], 422);
                 }
-        
+
                 // Buat user baru
                 $user = User::create([
                     'name' => $request->name,
                     'email' => $request->email,
                     'password' => Hash::make($request->password),
                 ]);
-        
+
                 // Tambahkan role setelah registrasi
                 $user->assignRole('user');  // user adalah role
-        
+
                 return response()->json([
                     'message' => 'User successfully registered!',
                     'user' => $user,
