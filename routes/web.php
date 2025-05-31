@@ -13,7 +13,8 @@ use App\Models\User;
 | contains the "web" middleware group. Now create something great!
 |
 */
-
+// test github Vikry is husband Angelina christy
+// yang namo risqi ny haluan istri kawan nyo vikry
 Route::get('/', function () {
     return view('welcome');
 });
