@@ -20,8 +20,8 @@ class RolePermissionSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'view dashboard']);
 
         // Buat role jika belum ada
-        $admin = Role::firstOrCreate(['name' => 'superadmin']);
-        $admin->givePermissionTo(['manage users', 'view dashboard']);
+        $superAdmin = Role::firstOrCreate(['name' => 'superadmin']);
+        $superAdmin->givePermissionTo(['manage users', 'view dashboard']);
 
         $user = Role::firstOrCreate(['name' => 'user']);
         $user->givePermissionTo('view dashboard');
