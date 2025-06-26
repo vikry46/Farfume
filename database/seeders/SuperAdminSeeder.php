@@ -17,84 +17,148 @@ class SuperAdminSeeder extends Seeder
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Definisikan permission-permission supplies (contoh lengkap untuk supplies)
-        $permissionsSupplies = [
+        $permissions = [
+            // Supplies
             'index-supplies',
             'create-supplies',
             'show-supplies',
             'update-supplies',
-            'delete-supplies'
-        ];
-
-        // Buat permission-permission supplies jika belum ada
-        foreach ($permissionsSupplies as $perm) {
-            Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
-        }
-
-        // Buat permission lain (produk, market, kariawan, dll) jika diperlukan
-        // Contoh produk:
-        $permissionsProducts = [
+            'delete-supplies',
+            
+            // Products
             'index-products',
             'create-products',
             'show-products',
             'update-products',
-            'delete-products'
+            'delete-products',
+            
+            // Markets
+            'index-markets',
+            'create-markets',
+            'show-markets',
+            'update-markets',
+            'delete-markets',
+            
+            // Kariawan
+            'index-kariawan',
+            'create-kariawan',
+            'show-kariawan',
+            'update-kariawan',
+            'delete-kariawan',
+            
+            // Pengiriman
+            'index-pengiriman',
+            'create-pengiriman',
+            'show-pengiriman',
+            'update-pengiriman',
+            'delete-pengiriman',
+            
+            // Penjualan
+            'index-penjualan',
+            'create-penjualan',
+            'show-penjualan',
+            'update-penjualan',
+            'delete-penjualan',
+            
+            // Barang Masuk
+            'index-barangmasuk',
+            'create-barangmasuk',
+            'show-barangmasuk',
+            'update-barangmasuk',
+            'delete-barangmasuk',
+
+            // ukuran botol
+            'index-ukuran-botol',
+            'create-ukuran-botol',
+            'show-ukuran-botol',
+            'update-ukuran-botol',
+            'delete-ukuran-botol',
+            
+            // Market Produk
+            'index-marketproduk',
+            'create-marketproduk',
+            
+            // Stok Market
+            'index-stokmarket',
+
+            // Stock Gudang
+            'index-gudang',
         ];
-        foreach ($permissionsProducts as $perm) {
-            Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
+
+        // foreach ($permissions as $permission) {
+        // Permission::create(['name' => $permission]);
+        // }
+
+        // Buat permission-permission supplies jika belum ada
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]); //->kenapa pakai first or create untuk mengghindari duplicasi
         }
 
-        // (Bisa teruskan buat permission lain sesuai kebutuhan)
+        // Permission untuk market
+     // Create roles
+        $superadmin = Role::firstOrCreate(['name' => 'superadmin']);
+        $admin = Role::firstOrCreate(['name' => 'admin']);
+        $user = Role::firstOrCreate(['name' => 'user']);
+        $manager = Role::firstOrCreate(['name' => 'manager']);
 
-        // ========================
-        // Role: superadmin (semua permission)
-        // ========================
-        $roleSuperadmin = Role::firstOrCreate(['name' => 'superadmin', 'guard_name' => 'web']);
-        $allPermissions = Permission::all();
-        $roleSuperadmin->syncPermissions($allPermissions);
+        // Give all permissions to superadmin
+        $superadmin->givePermissionTo(Permission::all());
 
-        $superadmin = User::firstOrCreate(
-            ['email' => 'superadmin@example.com'],
-            [
+        // Give specific permissions to admin
+        $admin->givePermissionTo([
+            'index-supplies', 'create-supplies', 'show-supplies', 'update-supplies',
+            'index-products', 'create-products', 'show-products', 'update-products',
+            'index-markets', 'create-markets', 'show-markets', 'update-markets',
+            'index-kariawan', 'create-kariawan', 'show-kariawan', 'update-kariawan',
+            'index-pengiriman', 'create-pengiriman', 'show-pengiriman', 'update-pengiriman',
+            'index-penjualan', 'create-penjualan', 'show-penjualan', 'update-penjualan',
+            'index-barangmasuk', 'create-barangmasuk', 'show-barangmasuk', 'update-barangmasuk',
+            'index-ukuran-botol','create-ukuran-botol','show-ukuran-botol','update-ukuran-botol',
+            'index-marketproduk', 'create-marketproduk',
+            'index-stokmarket',
+        ]);
+
+        // Give read permissions to manager
+        $manager->givePermissionTo([
+            'index-supplies', 'show-supplies',
+            'index-products', 'show-products',
+            'index-markets', 'show-markets',
+            'index-kariawan', 'show-kariawan',
+            'index-pengiriman', 'show-pengiriman',
+            'index-penjualan', 'show-penjualan',
+            'index-barangmasuk', 'show-barangmasuk',
+            'index-marketproduk',
+            'index-stokmarket',
+        ]);
+
+        // Give limited permissions to user
+        $user->givePermissionTo([
+            'index-products', 'show-products',
+            'index-markets', 'show-markets',
+            'index-penjualan', 'show-penjualan',
+            'index-stokmarket',
+        ]);
+
+        // Create a superadmin user if doesn't exist
+        $superadminUser = User::where('email', 'superadmin@example.com')->first();
+        if (!$superadminUser) {
+            $superadminUser = User::create([
                 'name' => 'Super Admin',
-                'password' => Hash::make('password123'),
-            ]
-        );
-        if (!$superadmin->hasRole($roleSuperadmin)) {
-            $superadmin->assignRole($roleSuperadmin);
+                'email' => 'superadmin@example.com',
+                'password' => bcrypt('password123'),
+            ]);
         }
+        $superadminUser->assignRole('superadmin');
 
-        // ========================
-        // Role: admin (hanya lihat supplies)
-        // ========================
-        $roleAdmin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-        $roleAdmin->syncPermissions(['show-supplies']);
-
-        $admin = User::firstOrCreate(
-            ['email' => 'admin@example.com'],
-            [
-                'name' => 'Admin Supplies',
-                'password' => Hash::make('password123'),
-            ]
-        );
-        if (!$admin->hasRole($roleAdmin)) {
-            $admin->assignRole($roleAdmin);
+        // Create an admin user if doesn't exist
+        $adminUser = User::where('email', 'admin@example.com')->first();
+        if (!$adminUser) {
+            $adminUser = User::create([
+                'name' => 'Admin',
+                'email' => 'admin@example.com',
+                'password' => bcrypt('password123'),
+            ]);
         }
-
-        // ========================
-        // Role: user (hanya bisa lihat supplies)
-        // ========================
-        $roleUser = Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
-        $roleUser->syncPermissions(['show-supplies']);
-
-        $user = User::firstOrCreate(
-            ['email' => 'user@example.com'],
-            [
-                'name' => 'User Biasa',
-                'password' => Hash::make('password123'),
-            ]
-        );
-        if (!$user->hasRole($roleUser)) {
-            $user->assignRole($roleUser);
-        }
+        $adminUser->assignRole('admin');
     }
 }

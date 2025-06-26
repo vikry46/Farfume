@@ -1,11 +1,12 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use Illuminate\Http\Request;
-use App\Models\Pengiriman;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
-
+use App\Models\Pengiriman;
+use App\Models\BarangMasuk;
 
 class PengirimanController extends Controller
 {
@@ -19,6 +20,7 @@ class PengirimanController extends Controller
             'data'    => $pengiriman
         ], Response::HTTP_OK);
     }
+
     public function show($id)
     {
         $pengiriman = Pengiriman::with(['market', 'supplie'])->find($id);
@@ -30,32 +32,29 @@ class PengirimanController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-    return response()->json([
-        'success' => true,
-        'message' => 'List semua pengiriman',
-        'data'    => $pengiriman->map(function ($item) {
-            return [
-                'id' => $item->id,
-                'id_market' => $item->id_market,
-                'id_supplie' => $item->id_supplie,
-                'jumlah_kirim' => $item->jumlah_kirim,
-                'tanggal' => $item->tanggal,
-                'market' => $item->market ? [
-                    'id' => $item->market->id,
-                    'nama' => $item->market->nama
+        return response()->json([
+            'success' => true,
+            'message' => 'Data pengiriman ditemukan',
+            'data'    => [
+                'id' => $pengiriman->id,
+                'id_market' => $pengiriman->id_market,
+                'id_supplie' => $pengiriman->id_supplie,
+                'jumlah_kirim' => $pengiriman->jumlah_kirim,
+                'tanggal' => $pengiriman->tanggal,
+                'market' => $pengiriman->market ? [
+                    'id' => $pengiriman->market->id,
+                    'nama' => $pengiriman->market->nama
                 ] : null,
-                'supplie' => $item->supplie ? [
-                    'id' => $item->supplie->id,
-                    'nama' => $item->supplie->nama
+                'supplie' => $pengiriman->supplie ? [
+                    'id' => $pengiriman->supplie->id,
+                    'nama' => $pengiriman->supplie->nama
                 ] : null
-            ];
-        })
-    ], Response::HTTP_OK);
+            ]
+        ], Response::HTTP_OK);
     }
 
     public function store(Request $request)
     {
-        // Validasi input
         $request->validate([
             'id_market'    => 'required|exists:markets,id',
             'id_supplie'   => 'required|exists:supplies,id',
@@ -63,8 +62,20 @@ class PengirimanController extends Controller
             'tanggal'      => 'required|date',
         ]);
 
-        // Simpan data
+        // Hitung total barang masuk & pengiriman sebelumnya
+        $totalMasuk = BarangMasuk::where('id_supplie', $request->id_supplie)->sum('juml_masuk');
+        $totalKirim = Pengiriman::where('id_supplie', $request->id_supplie)->sum('jumlah_kirim');
+        $sisaStok = $totalMasuk - $totalKirim;
+
+        if ($request->jumlah_kirim > $sisaStok) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Jumlah pengiriman melebihi stok gudang. Sisa stok hanya ' . $sisaStok,
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
         $pengiriman = Pengiriman::create([
+            'id'           => (string) Str::uuid(),
             'id_market'    => $request->id_market,
             'id_supplie'   => $request->id_supplie,
             'jumlah_kirim' => $request->jumlah_kirim,
@@ -90,16 +101,33 @@ class PengirimanController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        // Validasi input
         $request->validate([
-            'id_market'    => 'exists:markets,id',  
-            'id_supplie'   => 'exists:supplies,id',
-            'jumlah_kirim' => 'integer|min:1',
-            'tanggal'      => 'date', 
+            'jumlah_kirim' => 'required|integer|min:1',
+            'tanggal'      => 'required|date',
         ]);
 
+        $idSupplie = $request->id_supplie ?? $pengiriman->id_supplie;
+
+        // Total masuk & pengiriman lain (kecuali data ini sendiri)
+        $totalMasuk = BarangMasuk::where('id_supplie', $idSupplie)->sum('juml_masuk');
+        $totalKirimLain = Pengiriman::where('id_supplie', $idSupplie)
+            ->where('id', '!=', $pengiriman->id)
+            ->sum('jumlah_kirim');
+
+        $sisaStok = $totalMasuk - $totalKirimLain;
+
+        if ($request->jumlah_kirim > $sisaStok) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Jumlah pengiriman melebihi stok gudang. Sisa stok hanya ' . $sisaStok,
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
         // Update data
-        $pengiriman->update($request->all());
+        $pengiriman->update([
+            'jumlah_kirim' => $request->jumlah_kirim,
+            'tanggal'      => $request->tanggal,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -108,9 +136,6 @@ class PengirimanController extends Controller
         ], Response::HTTP_OK);
     }
 
-    /**
-     * Menghapus data pengiriman
-     */
     public function destroy($id)
     {
         $pengiriman = Pengiriman::find($id);

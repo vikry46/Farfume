@@ -14,7 +14,8 @@ use App\Http\Controllers\SupllyController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AuthenticateController;
-
+use App\Http\Controllers\GudangController;
+use App\Http\Controllers\UkuranBotolController;
 
 Route::get('/csrf', function () {
     return response()->json(['token' => csrf_token()]);
@@ -108,12 +109,22 @@ Route::middleware(['auth:sanctum', 'permission:show-barangmasuk'])->get('barang-
 Route::middleware(['auth:sanctum', 'permission:update-barangmasuk'])->patch('barang-masuk/update/{id}', [BarangMasukController::class, 'update']);
 Route::middleware(['auth:sanctum', 'permission:delete-barangmasuk'])->delete('barang-masuk/delete/{id}', [BarangMasukController::class, 'destroy']);
 
+//ukuran botol
+Route::middleware(['auth:sanctum', 'permission:index-ukuran-botol'])->get('ukuran-botol', [UkuranBotolController::class, 'index']);
+Route::middleware(['auth:sanctum', 'permission:create-ukuran-botol'])->post('ukuran-botol/store', [UkuranBotolController::class, 'store']);
+Route::middleware(['auth:sanctum', 'permission:show-ukuran-botol'])->get('ukuran-botol/show/{id}', [UkuranBotolController::class, 'show']);
+Route::middleware(['auth:sanctum', 'permission:update-ukuran-botol'])->patch('ukuran-botol/update/{id}', [UkuranBotolController::class, 'update']);
+Route::middleware(['auth:sanctum', 'permission:delete-ukuran-botol'])->delete('ukuran-botol/delete/{id}', [UkuranBotolController::class, 'destroy']);
+
 // Relasi Market Produk
 Route::middleware(['auth:sanctum', 'permission:index-marketproduk'])->get('market-produk', [RelationController::class, 'index']);
 Route::middleware(['auth:sanctum', 'permission:create-marketproduk'])->post('market-produk/store', [RelationController::class, 'store']);
 
 // Stok Market
 Route::middleware(['auth:sanctum', 'permission:index-stokmarket'])->get('stok-market', [ProdukMarketController::class, 'index']);
+
+//form Gudang
+Route::middleware(['auth:sanctum', 'permission:index-gudang'])->get('stock-gudang', [GudangController::class, 'index']);
 
 
 Route::middleware(['auth:sanctum', 'role:user'])->group(function () {});
