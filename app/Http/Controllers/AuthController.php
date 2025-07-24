@@ -8,10 +8,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 
-
 class AuthController extends Controller
 {
-    // AuthController.php
     public function login(Request $request)
     {
         $request->validate([
@@ -37,39 +35,42 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
-                // Validasi input
-                $validator = Validator::make($request->all(), [
-                    'name' => 'required|string|max:255',
-                    'email' => 'required|string|email|max:255|unique:users',
-                    'password' => 'required|string|min:8|confirmed',
-                ]);
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
 
-                if ($validator->fails()) {
-                    return response()->json(['errors' => $validator->errors()], 422);
-                }
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
-                // Buat user baru
-                $user = User::create([
-                    'name' => $request->name,
-                    'email' => $request->email,
-                    'password' => Hash::make($request->password),
-                ]);
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
 
-                // Tambahkan role setelah registrasi
-                $user->assignRole('user');  // user adalah role
+        $user->assignRole('user');
 
-                return response()->json([
-                    'message' => 'User successfully registered!',
-                    'user' => $user,
-                ], 201);
+        return response()->json([
+            'message' => 'User successfully registered!',
+            'user' => $user,
+        ], 201);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
-        return response()->json(['massage'=>'succsesfully logout']);
+        $token = $request->user()->currentAccessToken();
+
+        if ($token && !$token instanceof \Laravel\Sanctum\TransientToken) {
+            $token->delete();
+        }
+
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return response()->json(['message' => 'Successfully logged out']);
     }
-
 }
-
-

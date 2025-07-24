@@ -40,4 +40,40 @@ class ProdukMarketController extends Controller
             'data' => $stokToko
         ]);
     }
+
+    public function grafikStok()
+    {
+        $tokos = Market::all();
+        $suplais = Suplly::all();
+
+        $labels = $tokos->pluck('nama'); 
+        $datasets = [];
+
+        foreach ($suplais as $suplai) {
+            $data = [];
+            foreach ($tokos as $toko) {
+                $jumlahKirim = Pengiriman::where('id_market', $toko->id)
+                                ->where('id_supplie', $suplai->id)
+                                ->sum('jumlah_kirim');
+
+                $jumlahTerjual = Penjualan::where('id_market', $toko->id)
+                                ->where('id_supplie', $suplai->id)
+                                ->sum('estimasi_botol');
+
+                $stok = $jumlahKirim - $jumlahTerjual;
+                $data[] = $stok;
+            }
+
+            $datasets[] = [
+                'label' => $suplai->nama,
+                'data' => $data
+            ];
+        }
+
+        return response()->json([
+            'labels' => $labels,
+            'datasets' => $datasets
+        ]);
+    }
+
 }

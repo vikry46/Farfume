@@ -16,6 +16,10 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AuthenticateController;
 use App\Http\Controllers\GudangController;
 use App\Http\Controllers\UkuranBotolController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RolePermissionController;
+use App\Exports\PenjualanExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 Route::get('/csrf', function () {
     return response()->json(['token' => csrf_token()]);
@@ -29,23 +33,38 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-
-
-
-
 // User Management
 // Routes only accessible by Super Admin
 Route::middleware(['auth:sanctum', 'role:superadmin'])->group(function () {
 
     //permissions
     Route::prefix('auth')->group(function () {
-        Route::get('/permissions', [AuthenticateController::class, 'indexPermission']);
+        Route::get('/permission', [AuthenticateController::class, 'indexPermission']);
         Route::post('/permission/store', [AuthenticateController::class, 'storePermission']);
         Route::post('/role/store', [AuthenticateController::class, 'storeRole']);
         Route::post('/roles/{role}/permission', [AuthenticateController::class, 'givePermissionToRole']);
         Route::post('/users/{user}/role', [AuthenticateController::class, 'assignRoleToUser']);
         Route::post('/users/{user}/permission', [AuthenticateController::class, 'assignPermissionToUser']);
     });
+
+    // Role API
+    Route::get('/roles/{id}', [RoleController::class, 'show']);
+    Route::get('/roles', [RoleController::class, 'index']);
+    Route::post('/roles/store', [RoleController::class, 'store']); 
+    Route::get('/roles/edit/{id}', [RoleController::class, 'show']);
+    Route::put('/roles/update/{id}', [RoleController::class, 'update']);
+    Route::delete('/roles/delete/{id}', [RoleController::class, 'destroy']);
+    Route::get('/permissions', [RoleController::class, 'getAllPermissions']);
+    Route::put('/roles/sync-permissions/{id}', [RoleController::class, 'syncPermissions']);
+
+
+// CRUD Assign Permissions ke Role
+    Route::get('/roles/{id}/permissions', [RolePermissionController::class, 'index']); // Lihat role + permission
+    Route::patch('/roles/{id}/permissions', [RolePermissionController::class, 'sync']); // Sinkronkan permission
+    Route::patch('/roles/{id}/permissions/revoke', [RolePermissionController::class, 'revokePermission']); // Hapus satu permission dari role
+
+    // Get list permission untuk dropdown frontend
+    Route::get('/permissions', [RoleController::class, 'getAllPermissions']);
 
     // User Management
     Route::get('/users', [UserController::class, 'index']);
@@ -125,6 +144,49 @@ Route::middleware(['auth:sanctum', 'permission:index-stokmarket'])->get('stok-ma
 
 //form Gudang
 Route::middleware(['auth:sanctum', 'permission:index-gudang'])->get('stock-gudang', [GudangController::class, 'index']);
+// form stock market
+Route::middleware(['auth:sanctum', 'permission:index-market'])->get('/produk-market/grafik-stok', [ProdukMarketController::class, 'grafikStok']);
 
+// Form grafik
+// === Penjualan Grafik ===
+Route::prefix('penjualan/grafik')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/tren', [PenjualanController::class, 'grafikTrenPenjualan'])
+        ->middleware('permission:view-penjualan-tren');
+
+    Route::get('/produk', [PenjualanController::class, 'grafikPerProduk'])
+        ->middleware('permission:view-penjualan-produk');
+
+    Route::get('/market', [PenjualanController::class, 'grafikPerMarket'])
+        ->middleware('permission:view-penjualan-market');
+
+    Route::get('/revenue', [PenjualanController::class, 'grafikRevenue'])
+        ->middleware('permission:view-penjualan-revenue');
+
+    Route::get('/ukuran', [PenjualanController::class, 'grafikPerUkuran'])
+        ->middleware('permission:view-penjualan-ukuran');
+});
+
+// === Pengiriman Grafik ===
+Route::prefix('pengiriman/grafik')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/tren-bulanan', [PengirimanController::class, 'grafikPengirimanPerBulan'])
+        ->middleware('permission:view-pengiriman-tren');
+
+    Route::get('/per-market', [PengirimanController::class, 'grafikPengirimanPerMarket'])
+        ->middleware('permission:view-pengiriman-market');
+
+    Route::get('/stok-supplier', [PengirimanController::class, 'grafikStokPerSupplier'])
+        ->middleware('permission:view-pengiriman-stok-supplier');
+
+    Route::get('/per-supplier', [PengirimanController::class, 'grafikPengirimanPerSupplier'])
+        ->middleware('permission:view-pengiriman-supplier');
+
+    Route::get('/frekuensi', [PengirimanController::class, 'grafikFrekuensiPengiriman'])
+        ->middleware('permission:view-pengiriman-frekuensi');
+});
+
+
+Route::middleware(['auth:sanctum', 'permission:index-export-penjualan'])->get('export-penjualan', function () {
+return Excel::download(new PenjualanExport, 'penjualan.xlsx');
+});
 
 Route::middleware(['auth:sanctum', 'role:user'])->group(function () {});

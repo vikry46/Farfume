@@ -7,6 +7,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use App\Models\Pengiriman;
 use App\Models\BarangMasuk;
+use Illuminate\Support\Facades\DB;
 
 class PengirimanController extends Controller
 {
@@ -35,21 +36,7 @@ class PengirimanController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data pengiriman ditemukan',
-            'data'    => [
-                'id' => $pengiriman->id,
-                'id_market' => $pengiriman->id_market,
-                'id_supplie' => $pengiriman->id_supplie,
-                'jumlah_kirim' => $pengiriman->jumlah_kirim,
-                'tanggal' => $pengiriman->tanggal,
-                'market' => $pengiriman->market ? [
-                    'id' => $pengiriman->market->id,
-                    'nama' => $pengiriman->market->nama
-                ] : null,
-                'supplie' => $pengiriman->supplie ? [
-                    'id' => $pengiriman->supplie->id,
-                    'nama' => $pengiriman->supplie->nama
-                ] : null
-            ]
+            'data'    => $pengiriman
         ], Response::HTTP_OK);
     }
 
@@ -62,7 +49,7 @@ class PengirimanController extends Controller
             'tanggal'      => 'required|date',
         ]);
 
-        // Hitung total barang masuk & pengiriman sebelumnya
+        // Hitung stok
         $totalMasuk = BarangMasuk::where('id_supplie', $request->id_supplie)->sum('juml_masuk');
         $totalKirim = Pengiriman::where('id_supplie', $request->id_supplie)->sum('jumlah_kirim');
         $sisaStok = $totalMasuk - $totalKirim;
@@ -107,8 +94,6 @@ class PengirimanController extends Controller
         ]);
 
         $idSupplie = $request->id_supplie ?? $pengiriman->id_supplie;
-
-        // Total masuk & pengiriman lain (kecuali data ini sendiri)
         $totalMasuk = BarangMasuk::where('id_supplie', $idSupplie)->sum('juml_masuk');
         $totalKirimLain = Pengiriman::where('id_supplie', $idSupplie)
             ->where('id', '!=', $pengiriman->id)
@@ -123,7 +108,6 @@ class PengirimanController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        // Update data
         $pengiriman->update([
             'jumlah_kirim' => $request->jumlah_kirim,
             'tanggal'      => $request->tanggal,
@@ -153,5 +137,71 @@ class PengirimanController extends Controller
             'success' => true,
             'message' => 'Pengiriman berhasil dihapus'
         ], Response::HTTP_OK);
+    }
+
+    // Grafik sederhana seperti PenjualanController
+
+    public function grafikPengirimanPerBulan()
+    {
+        $data = DB::table('pengiriman')
+            ->selectRaw('DATE_FORMAT(tanggal, "%Y-%m") as bulan, SUM(jumlah_kirim) as total_kirim')
+            ->groupBy('bulan')
+            ->orderBy('bulan')
+            ->get();
+
+        return response()->json($data, Response::HTTP_OK);
+    }
+
+    public function grafikPengirimanPerMarket()
+    {
+        $data = DB::table('pengiriman')
+            ->join('markets', 'pengiriman.id_market', '=', 'markets.id')
+            ->selectRaw('markets.nama as market, SUM(pengiriman.jumlah_kirim) as total_kirim')
+            ->groupBy('market')
+            ->orderBy('total_kirim', 'desc')
+            ->get();
+
+        return response()->json($data, Response::HTTP_OK);
+    }
+
+    public function grafikPengirimanPerSupplier()
+    {
+        $data = DB::table('pengiriman')
+            ->join('supplies', 'pengiriman.id_supplie', '=', 'supplies.id')
+            ->selectRaw('supplies.nama as supplier, SUM(pengiriman.jumlah_kirim) as total_kirim')
+            ->groupBy('supplier')
+            ->orderBy('total_kirim', 'desc')
+            ->get();
+
+        return response()->json($data, Response::HTTP_OK);
+    }
+
+    public function grafikFrekuensiPengiriman()
+    {
+        $data = DB::table('pengiriman')
+            ->selectRaw('DATE_FORMAT(tanggal, "%Y-%m") as bulan, COUNT(*) as jumlah_pengiriman')
+            ->groupBy('bulan')
+            ->orderBy('bulan')
+            ->get();
+
+        return response()->json($data, Response::HTTP_OK);
+    }
+
+    public function grafikStokPerSupplier()
+    {
+        $data = DB::table('barang_masuks')
+            ->join('supplies', 'barang_masuks.id_supplie', '=', 'supplies.id')
+            ->selectRaw('supplies.nama as supplier,
+                SUM(barang_masuks.juml_masuk) as total_masuk,
+                (SELECT COALESCE(SUM(jumlah_kirim), 0) FROM pengiriman WHERE pengiriman.id_supplie = barang_masuks.id_supplie) as total_kirim'
+            )
+            ->groupBy('barang_masuks.id_supplie', 'supplies.nama')
+            ->get()
+            ->map(function($item) {
+                $item->sisa = $item->total_masuk - $item->total_kirim;
+                return $item;
+            });
+
+        return response()->json($data, Response::HTTP_OK);
     }
 }

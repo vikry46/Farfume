@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class PenjualanController extends Controller
 {
@@ -179,4 +180,67 @@ class PenjualanController extends Controller
             'message' => 'Data berhasil dihapus'
         ], Response::HTTP_OK);
     }
+
+
+// Function grafik
+
+    public function grafikTrenPenjualan()
+{
+    $result = DB::table('penjualans')
+        ->selectRaw('DATE(tanggal) as tanggal, SUM(terjual) as total_terjual')
+        ->where('delete', false)
+        ->groupBy('tanggal')
+        ->orderBy('tanggal')
+        ->get();
+
+    return response()->json($result);
+}
+
+public function grafikPerProduk()
+{
+    $result = DB::table('penjualans')
+        ->join('supplies', 'penjualans.id_supplie', '=', 'supplies.id')
+        ->selectRaw('supplies.nama as produk, SUM(terjual) as total_terjual')
+        ->where('penjualans.delete', false)
+        ->groupBy('produk')
+        ->get();
+
+    return response()->json($result);
+}
+
+public function grafikPerMarket()
+{
+    $result = DB::table('penjualans')
+        ->join('markets', 'penjualans.id_market', '=', 'markets.id')
+        ->selectRaw('markets.nama as market, SUM(terjual) as total_terjual')
+        ->where('penjualans.delete', false)
+        ->groupBy('market')
+        ->get();
+
+    return response()->json($result);
+}
+
+public function grafikRevenue()
+{
+    $result = DB::table('penjualans')
+        ->selectRaw('DATE(tanggal) as tanggal, SUM(terjual * harga) as revenue')
+        ->where('delete', false)
+        ->groupBy('tanggal')
+        ->orderBy('tanggal')
+        ->get();
+
+    return response()->json($result);
+}
+
+public function grafikPerUkuran()
+{
+    $result = DB::table('penjualans')
+        ->selectRaw('ukuran_botol, SUM(terjual) as total_terjual')
+        ->where('delete', false)
+        ->groupBy('ukuran_botol')
+        ->get();
+
+    return response()->json($result);
+}
+
 }
