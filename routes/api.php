@@ -66,7 +66,7 @@ Route::middleware(['auth:sanctum', 'role:superadmin'])->group(function () {
     // Get list permission untuk dropdown frontend
     Route::get('/permissions', [RoleController::class, 'getAllPermissions']);
 
-    // User Management
+    // User Managementstore
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/user/store', [UserController::class, 'store']);
     Route::get('/users/{id}', [UserController::class, 'show']);
