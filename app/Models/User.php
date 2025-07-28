@@ -52,4 +52,8 @@ class User extends Authenticatable
     {
         return $this->getRoleNames()->first ();
     }
+    public function markets()
+    {
+        return $this->belongsTo(Market::class);
+    }
 }

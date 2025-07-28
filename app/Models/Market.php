@@ -62,5 +62,9 @@ class Market extends Model
     {
         return $this->hasMany(Penjualan::class);
     }
+    public function idUser()
+    {
+        return $this->hasMany(User::class);
+    }
 
 }
