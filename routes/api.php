@@ -114,12 +114,22 @@ Route::middleware(['auth:sanctum', 'permission:show-pengiriman'])->get('pengirim
 Route::middleware(['auth:sanctum', 'permission:update-pengiriman'])->patch('pengiriman/update/{id}', [PengirimanController::class, 'update']);
 Route::middleware(['auth:sanctum', 'permission:delete-pengiriman'])->delete('pengiriman/delete/{id}', [PengirimanController::class, 'destroy']);
 
-// Penjualan
-Route::middleware(['auth:sanctum', 'permission:index-penjualan'])->get('penjualan', [PenjualanController::class, 'index']);
-Route::middleware(['auth:sanctum', 'permission:create-penjualan'])->post('penjualan/store', [PenjualanController::class, 'store']);
-Route::middleware(['auth:sanctum', 'permission:show-penjualan'])->get('penjualan/show/{id}', [PenjualanController::class, 'show']);
-Route::middleware(['auth:sanctum', 'permission:update-penjualan'])->patch('penjualan/update/{id}', [PenjualanController::class, 'update']);
-Route::middleware(['auth:sanctum', 'permission:delete-penjualan'])->delete('penjualan/delete/{id}', [PenjualanController::class, 'destroy']);
+Route::prefix('markets/{market}/penjualan')->middleware('auth:sanctum')->group(function () {
+    Route::middleware(['permission:index-penjualan', 'market.access'])
+        ->get('/', [PenjualanController::class, 'index']);
+
+    Route::middleware(['permission:create-penjualan', 'market.access'])
+        ->post('/store', [PenjualanController::class, 'store']);
+
+    Route::middleware(['permission:show-penjualan', 'market.access'])
+        ->get('/show/{id}', [PenjualanController::class, 'show']);
+
+    Route::middleware(['permission:update-penjualan', 'market.access'])
+        ->patch('/update/{id}', [PenjualanController::class, 'update']);
+
+    Route::middleware(['permission:delete-penjualan', 'market.access'])
+        ->delete('/delete/{id}', [PenjualanController::class, 'destroy']);
+});
 
 // Barang Masuk
 Route::middleware(['auth:sanctum', 'permission:index-barangmasuk'])->get('barang-masuk', [BarangMasukController::class, 'index']);

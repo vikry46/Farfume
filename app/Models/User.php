@@ -2,58 +2,58 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\Permission\Traits\HasRoles;
-
-
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
-    use HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     protected $appends = ['role'];
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
 
     public function getRoleAttribute()
     {
-        return $this->getRoleNames()->first ();
+        return $this->getRoleNames()->first();
     }
+
     public function markets()
     {
-        return $this->belongsTo(Market::class);
+        return $this->belongsToMany(Market::class, 'user_markets', 'user_id', 'market_id')
+                    ->withPivot('market_role', 'is_active')
+                    ->wherePivot('is_active', true)
+                    ->withTimestamps();
+    }
+
+    public function hasAccessToMarket($marketId)
+    {
+        if ($this->hasRole('superadmin')) return true;
+
+        return $this->markets()->where('market_id', $marketId)->exists();
+    }
+
+    public function getRoleInMarket($marketId)
+    {
+        if ($this->hasRole('superadmin')) return 'superadmin';
+
+        $market = $this->markets()->where('market_id', $marketId)->first();
+        return $market ? $market->pivot->market_role : null;
     }
 }
