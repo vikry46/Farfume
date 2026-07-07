@@ -22,15 +22,36 @@ class SuperAdminSeeder extends Seeder
         $permissions = collect($authorities)->flatten()->unique()->toArray();
 
         //  Buat permissions kalau belum ada
+        // foreach ($permissions as $permission) {
+        //      ['name' => $permission, 'guard_name' => 'sanctum'];
+        // }
         foreach ($permissions as $permission) {
-             ['name' => $permission, 'guard_name' => 'sanctum'];
+         Permission::firstOrCreate([
+        'name' => $permission,
+        'guard_name' => 'web',
+          ]);
         }
 
         //  Buat roles
-        $superadmin = Role::firstOrCreate(['name' => 'superadmin']);
-        $admin = Role::firstOrCreate(['name' => 'admin']);
-        $manager = Role::firstOrCreate(['name' => 'manager']);
-        $user = Role::firstOrCreate(['name' => 'user']);
+        $superadmin = Role::firstOrCreate([
+            'name' => 'superadmin',
+            'guard_name' => 'web',
+        ]);
+
+        $admin = Role::firstOrCreate([
+            'name' => 'admin',
+            'guard_name' => 'web',
+        ]);
+
+        $manager = Role::firstOrCreate([
+            'name' => 'manager',
+            'guard_name' => 'web',
+        ]);
+
+        $user = Role::firstOrCreate([
+            'name' => 'user',
+            'guard_name' => 'web',
+        ]);
 
         //  Superadmin: semua permission
         $superadmin->givePermissionTo(Permission::all());

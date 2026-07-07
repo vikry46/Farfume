@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\BarangMasuk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+// use Illuminate\Support\Str;
 
 class BarangMasukController extends Controller
 {
@@ -22,30 +23,69 @@ class BarangMasukController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'id_supplie'      => 'required|uuid|exists:supplies,id',
-            'juml_masuk'      => 'required|numeric|min:1',
-            'tanggal_masuk'   => 'required|date',
+            'items' => 'required|array|min:1',
+
+            'items.*.id_supplie' => 'required|uuid|exists:supplies,id',
+
+            'items.*.juml_masuk' => 'required|numeric|min:1',
+
+            'items.*.tanggal_masuk' => 'required|date',
         ], [
-            'id_supplie.required'     => 'ID Suplie wajib diisi',
-            'id_supplie.exists'       => 'ID Suplie tidak ditemukan',
-            'juml_masuk.required'     => 'Jumlah masuk wajib diisi',
-            'tanggal_masuk.required'  => 'Tanggal masuk wajib diisi',
+            'items.required' => 'Data barang masuk wajib diisi.',
+            'items.array' => 'Format data tidak valid.',
+
+            'items.*.id_supplie.required' => 'Supplie wajib dipilih.',
+            'items.*.id_supplie.exists' => 'Supplie tidak ditemukan.',
+
+            'items.*.juml_masuk.required' => 'Jumlah masuk wajib diisi.',
+            'items.*.juml_masuk.numeric' => 'Jumlah masuk harus berupa angka.',
+            'items.*.juml_masuk.min' => 'Jumlah masuk minimal 1.',
+
+            'items.*.tanggal_masuk.required' => 'Tanggal masuk wajib diisi.',
+            'items.*.tanggal_masuk.date' => 'Format tanggal tidak valid.',
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return response()->json([
+                'message' => 'Validasi gagal.',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
-        $barangMasuk = BarangMasuk::create([
-            'id_supplie'     => $request->id_supplie,
-            'juml_masuk'     => $request->juml_masuk,
-            'tanggal_masuk'  => $request->tanggal_masuk,
-        ]);
+        DB::beginTransaction();
 
-        return response()->json([
-            'data'    => $barangMasuk->load('supplie'),
-            'message' => 'Data Barang Masuk berhasil disimpan'
-        ], 201);
+        try {
+
+            $barangMasukList = [];
+
+            foreach ($request->items as $item) {
+
+                $barangMasuk = BarangMasuk::create([
+                    'id_supplie' => $item['id_supplie'],
+                    'juml_masuk' => $item['juml_masuk'],
+                    'tanggal_masuk' => $item['tanggal_masuk'],
+                ]);
+
+                $barangMasukList[] = $barangMasuk->load('supplie');
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Semua data berhasil disimpan.',
+                'data' => $barangMasukList
+            ], 201);
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Gagal menyimpan data.',
+                'error' => $e->getMessage()
+            ], 500);
+
+        }
     }
 
    // show function

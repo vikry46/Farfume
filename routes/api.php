@@ -34,7 +34,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // User Management
-// Routes only accessible by Super Admin
+// Routes only accessible by Super Admin 
 Route::middleware(['auth:sanctum', 'role:superadmin'])->group(function () {
 
     //permissions
